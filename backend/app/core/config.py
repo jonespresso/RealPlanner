@@ -9,5 +9,7 @@ class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
     DATABASE_URL: str = os.getenv("DATABASE_URL")
     GOOGLE_MAPS_API_KEY: str = os.getenv("GOOGLE_MAPS_API_KEY")
+    GOOGLE_CLOUD_PROJECT_ID: str = os.getenv("GOOGLE_CLOUD_PROJECT_ID")
+    GOOGLE_SERVICE_ACCOUNT_KEY: str = os.getenv("GOOGLE_SERVICE_ACCOUNT_KEY", "")
 
 settings = Settings()

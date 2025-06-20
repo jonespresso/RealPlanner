@@ -11,5 +11,7 @@ def setup_logging() -> None:
         ]
     )
 
-def get_logger(name: str) -> logging.Logger:
-    return logging.getLogger(name) 
+def get_logger(name: str, debug: bool = True) -> logging.Logger:
+    logger = logging.getLogger(name)
+    logger.setLevel(logging.DEBUG if debug else logging.INFO)
+    return logger

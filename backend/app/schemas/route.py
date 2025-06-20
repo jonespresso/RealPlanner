@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 from datetime import datetime
 
 class HouseVisit(BaseModel):
@@ -9,12 +9,18 @@ class HouseVisit(BaseModel):
     duration_minutes: int = 20
 
 class RoutePlanRequest(BaseModel):
+    start_address: str
+    destination_address: Optional[str] = None
     houses: List[HouseVisit]
 
 class StopAssignment(BaseModel):
     address: str
     arrival_time: datetime
     departure_time: datetime
+    original_order: Optional[int] = None
+    optimized_order: Optional[int] = None
+    time_window_violation: Optional[bool] = None
+    method: Optional[str] = None
 
 class RoutePlanResponse(BaseModel):
     route: List[StopAssignment]
