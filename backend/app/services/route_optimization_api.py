@@ -1,6 +1,6 @@
 import json
 import requests
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from app.core.logging import get_logger
 from google.auth.transport.requests import Request
 from google.oauth2 import service_account
@@ -12,9 +12,10 @@ def get_oauth_token():
     """Get OAuth 2.0 token for Google Route Optimization API"""
     try:
         # Try to use service account credentials
-        if hasattr(settings, 'GOOGLE_SERVICE_ACCOUNT_KEY') and settings.GOOGLE_SERVICE_ACCOUNT_KEY:
+        service_account_info = settings.get_service_account_key()
+        if service_account_info:
             credentials = service_account.Credentials.from_service_account_info(
-                json.loads(settings.GOOGLE_SERVICE_ACCOUNT_KEY),
+                service_account_info,
                 scopes=['https://www.googleapis.com/auth/cloud-platform']
             )
         else:
@@ -41,57 +42,58 @@ def build_payload(locations_with_windows, start_location, destination_location=N
     for i, loc in enumerate(locations_with_windows):
         shipment = {
             "deliveries": [{
-                "arrivalLocation": {
-                    "latLng": {
-                        "latitude": loc["lat"],
-                        "longitude": loc["lng"]
-                    }
+                "arrival_location": {
+                    "latitude": loc["lat"],
+                    "longitude": loc["lng"]
                 },
-                "timeWindows": [{
-                    "startTime": datetime.fromtimestamp(loc["start_ts"], timezone.utc).isoformat(),
-                    "endTime": datetime.fromtimestamp(loc["end_ts"], timezone.utc).isoformat()
+                "time_windows": [{
+                    "start_time": datetime.fromtimestamp(loc["start_ts"], timezone.utc).isoformat(),
+                    "end_time": datetime.fromtimestamp(loc["end_ts"], timezone.utc).isoformat()
                 }]
             }],
             "label": f"House {i+1}",
-            "penaltyCost": 0  # No penalty for missing visits
+            "penalty_cost": 0  # No penalty for missing visits
         }
         shipments.append(shipment)
 
     # Build vehicle (realtor's car)
     vehicle_start_location = {
-        "latLng": {
-            "latitude": start_location["lat"],
-            "longitude": start_location["lng"]
-        }
+        "latitude": start_location["lat"],
+        "longitude": start_location["lng"]
     }
     
     vehicle_end_location = vehicle_start_location
     if destination_location:
         vehicle_end_location = {
-            "latLng": {
-                "latitude": destination_location["lat"],
-                "longitude": destination_location["lng"]
-            }
+            "latitude": destination_location["lat"],
+            "longitude": destination_location["lng"]
         }
 
     vehicle = {
-        "startLocation": vehicle_start_location,
-        "endLocation": vehicle_end_location,
-        "travelMode": 1,  # DRIVING
-        "routeModifiers": {
-            "avoidTolls": False,
-            "avoidHighways": False
-        },
-        "startTime": datetime.fromtimestamp(start_ts, timezone.utc).isoformat()
+        "start_location": vehicle_start_location,
+        "end_location": vehicle_end_location,
+        "travel_mode": 1,  # DRIVING
+        "route_modifiers": {
+            "avoid_tolls": False,
+            "avoid_highways": False
+        }
     }
+
+    # Compute global time window
+    earliest_start = min(loc["start_ts"] for loc in locations_with_windows)
+    latest_end = max(loc["end_ts"] for loc in locations_with_windows)
+    global_start_time = datetime.fromtimestamp(earliest_start, timezone.utc).isoformat()
+    global_end_time = datetime.fromtimestamp(latest_end, timezone.utc).isoformat()
 
     return {
         "parent": f"projects/{settings.GOOGLE_CLOUD_PROJECT_ID}",
         "model": {
+            "global_start_time": global_start_time,
+            "global_end_time": global_end_time,
             "shipments": shipments,
             "vehicles": [vehicle]
         },
-        "searchMode": 1,  # GLOBAL_MODE for best optimization
+        "search_mode": 1,  # GLOBAL_MODE for best optimization
         "timeout": "60s"  # Allow up to 60 seconds for optimization
     }
 
@@ -143,9 +145,7 @@ def process_response(raw_response, locations):
                     
                     # Extract timing information
                     arrival_time = datetime.fromisoformat(visit["startTime"].replace("Z", "+00:00"))
-                    departure_time = arrival_time.replace(
-                        second=arrival_time.second + location["visit_duration_sec"]
-                    )
+                    departure_time = arrival_time + timedelta(seconds=location["visit_duration_sec"])
                     
                     route_plan.append({
                         "address": house_data.address,
