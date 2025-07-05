@@ -42,17 +42,17 @@ def build_payload(locations_with_windows, start_location, destination_location=N
     for i, loc in enumerate(locations_with_windows):
         shipment = {
             "deliveries": [{
-                "arrival_location": {
+                "arrivalLocation": {
                     "latitude": loc["lat"],
                     "longitude": loc["lng"]
                 },
-                "time_windows": [{
-                    "start_time": datetime.fromtimestamp(loc["start_ts"], timezone.utc).isoformat(),
-                    "end_time": datetime.fromtimestamp(loc["end_ts"], timezone.utc).isoformat()
+                "timeWindows": [{
+                    "startTime": datetime.fromtimestamp(loc["start_ts"], timezone.utc).isoformat(),
+                    "endTime": datetime.fromtimestamp(loc["end_ts"], timezone.utc).isoformat()
                 }]
             }],
             "label": f"House {i+1}",
-            "penalty_cost": 0  # No penalty for missing visits
+            "penaltyCost": 0  # No penalty for missing visits
         }
         shipments.append(shipment)
 
@@ -70,12 +70,12 @@ def build_payload(locations_with_windows, start_location, destination_location=N
         }
 
     vehicle = {
-        "start_location": vehicle_start_location,
-        "end_location": vehicle_end_location,
-        "travel_mode": 1,  # DRIVING
-        "route_modifiers": {
-            "avoid_tolls": False,
-            "avoid_highways": False
+        "startLocation": vehicle_start_location,
+        "endLocation": vehicle_end_location,
+        "travelMode": 1,  # DRIVING
+        "routeModifiers": {
+            "avoidTolls": False,
+            "avoidHighways": False
         }
     }
 
@@ -88,12 +88,12 @@ def build_payload(locations_with_windows, start_location, destination_location=N
     return {
         "parent": f"projects/{settings.GOOGLE_CLOUD_PROJECT_ID}",
         "model": {
-            "global_start_time": global_start_time,
-            "global_end_time": global_end_time,
+            "globalStartTime": global_start_time,
+            "globalEndTime": global_end_time,
             "shipments": shipments,
             "vehicles": [vehicle]
         },
-        "search_mode": 1,  # GLOBAL_MODE for best optimization
+        "searchMode": 1,  # GLOBAL_MODE for best optimization
         "timeout": "60s"  # Allow up to 60 seconds for optimization
     }
 
