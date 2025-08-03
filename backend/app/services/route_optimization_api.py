@@ -76,7 +76,9 @@ def build_payload(locations_with_windows, start_location, destination_location=N
         "routeModifiers": {
             "avoidTolls": False,
             "avoidHighways": False
-        }
+        },
+        "costPerKilometer": 10.0,
+        "costPerHour": 40.0
     }
 
     # Compute global time window
