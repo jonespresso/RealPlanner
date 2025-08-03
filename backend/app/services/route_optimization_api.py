@@ -52,7 +52,7 @@ def build_payload(locations_with_windows, start_location, destination_location=N
                 }]
             }],
             "label": f"House {i+1}",
-            "penaltyCost": 0  # No penalty for missing visits
+            "penaltyCost": 10000  # High penalty for missing visits
         }
         shipments.append(shipment)
 
@@ -101,7 +101,6 @@ def call_api(request_payload):
     """Call Google Route Optimization API"""
     try:
         logger.info("Calling Google Route Optimization API")
-        logger.debug(f"Request payload: {json.dumps(request_payload, indent=2)}")
         
         # Get OAuth token
         auth_token = get_oauth_token()
@@ -121,7 +120,6 @@ def call_api(request_payload):
         response.raise_for_status()
         result = response.json()
         logger.info("Successfully received optimized route from Route Optimization API")
-        logger.debug(f"API Response: {json.dumps(result, indent=2)}")
         return result
     except requests.exceptions.RequestException as e:
         logger.error(f"Route Optimization API failed: {str(e)}", exc_info=True)
@@ -132,31 +130,43 @@ def call_api(request_payload):
 def process_response(raw_response, locations):
     """Process Route Optimization API response"""
     route_plan = []
+    
+    # Check for unassigned shipments
+    if "unperformedShipments" in raw_response:
+        unassigned = raw_response["unperformedShipments"]
+        logger.warning(f"Found {len(unassigned)} unassigned shipments!")
+        for i, unassigned_shipment in enumerate(unassigned):
+            if "shipmentIndex" in unassigned_shipment:
+                shipment_index = unassigned_shipment["shipmentIndex"]
+                if shipment_index < len(locations):
+                    location = locations[shipment_index]
+                    house_data = location["house_data"]
+                    logger.error(f"House '{house_data.address}' was NOT assigned to the route!")
+    
     if "routes" in raw_response and len(raw_response["routes"]) > 0:
         route = raw_response["routes"][0]
         
         # Process the optimized route
+        logger.debug(f"Processing route: {route}")
         for i, visit in enumerate(route.get("visits", [])):
-            if "shipmentIndex" in visit:
-                shipment_index = visit["shipmentIndex"]
-                if shipment_index < len(locations):
-                    location = locations[shipment_index]
-                    house_data = location["house_data"]
-                    
-                    # Extract timing information
-                    arrival_time = datetime.fromisoformat(visit["startTime"].replace("Z", "+00:00"))
-                    departure_time = arrival_time + timedelta(seconds=location["visit_duration_sec"])
-                    
-                    route_plan.append({
-                        "address": house_data.address,
-                        "arrival_time": arrival_time,
-                        "departure_time": departure_time,
-                        "original_order": location["original_index"],
-                        "optimized_order": i,
-                        "time_window_violation": False,  # Route Optimization API respects time windows
-                        "method": "route_optimization_api"
-                    })
-                    logger.debug(f"Processed optimized visit: {house_data.address} (original: {location['original_index']}, optimized: {i})")
+            shipment_index = visit["shipmentIndex"] if "shipmentIndex" in visit else 0
+            if shipment_index < len(locations):
+                location = locations[shipment_index]
+                house_data = location["house_data"]
+                
+                # Extract timing information
+                arrival_time = datetime.fromisoformat(visit["startTime"].replace("Z", "+00:00"))
+                departure_time = arrival_time + timedelta(seconds=location["visit_duration_sec"])
+                logger.debug(f"Processed optimized visit: {house_data.address} (original: {location['original_index']}, optimized: {i})")
+                route_plan.append({
+                    "address": house_data.address,
+                    "arrival_time": arrival_time,
+                    "departure_time": departure_time,
+                    "original_order": location["original_index"],
+                    "optimized_order": i,
+                    "time_window_violation": False,  # Route Optimization API respects time windows
+                    "method": "route_optimization_api"
+                })
     
     return route_plan
 

@@ -32,7 +32,7 @@ def plan_optimized_route(houses, start_address, destination_address=None):
         
         # Geocode intermediate locations
         locations = []
-        for h in houses:
+        for i, h in enumerate(houses):
             logger.info(f"Geocoding address: {h.address}")
             lat, lng = geocode_address(h.address)
             locations.append({
@@ -41,7 +41,7 @@ def plan_optimized_route(houses, start_address, destination_address=None):
                 "start_ts": int(h.start_time.timestamp()),
                 "end_ts": int(h.end_time.timestamp()),
                 "visit_duration_sec": h.duration_minutes * 60,
-                "original_index": len(locations),  # Keep track of original order
+                "original_index": i,  # Keep track of original order
                 "house_data": h  # Store the original house data
             })
             logger.debug(f"Geocoded location: lat={lat}, lng={lng}")

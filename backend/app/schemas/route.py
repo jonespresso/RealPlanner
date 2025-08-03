@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Dict
 from datetime import datetime
 
 class HouseVisit(BaseModel):
@@ -24,3 +24,8 @@ class StopAssignment(BaseModel):
 
 class RoutePlanResponse(BaseModel):
     route: List[StopAssignment]
+
+class CurlCommandResponse(BaseModel):
+    route_optimization_api: str
+    routes_api: str
+    setup_instructions: Dict[str, Dict[str, str]]

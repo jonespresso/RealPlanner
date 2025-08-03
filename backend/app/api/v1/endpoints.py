@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException
-from app.schemas.route import RoutePlanRequest, RoutePlanResponse
+from app.schemas.route import RoutePlanRequest, RoutePlanResponse, CurlCommandResponse
 from app.services.routing import plan_optimized_route
+from app.services.curl_generator import generate_curl_commands
 from app.core.logging import get_logger
 
 router = APIRouter()
@@ -14,7 +15,7 @@ def ping():
 def plan_route(request: RoutePlanRequest):
     try:
         logger.info(f"Received route planning request for {len(request.houses)} houses")
-        logger.debug(f"Request details: {request.model_dump()}")
+        logger.debug(f"Request.details: {request.model_dump()}")
         
         result = plan_optimized_route(
             houses=request.houses,
@@ -25,4 +26,17 @@ def plan_route(request: RoutePlanRequest):
         return result
     except Exception as e:
         logger.error(f"Error planning route: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/generate-curl-commands", response_model=CurlCommandResponse)
+def generate_curl_commands_endpoint(request: RoutePlanRequest):
+    try:
+        logger.info(f"Generating curl commands for {len(request.houses)} houses")
+        logger.debug(f"Request details: {request.model_dump()}")
+        
+        result = generate_curl_commands(request)
+        logger.info("Successfully generated curl commands")
+        return result
+    except Exception as e:
+        logger.error(f"Error generating curl commands: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
