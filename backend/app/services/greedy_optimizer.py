@@ -1,6 +1,7 @@
 import math
 from datetime import datetime, timezone
 from app.core.logging import get_logger
+from app.services.time_windows import compute_schedule_with_time_windows
 
 logger = get_logger(__name__)
 
@@ -105,56 +106,4 @@ def optimize_route(locations, start_location, destination_location=None, start_t
         raise
 
 def validate_time_windows(route_plan, locations, start_ts):
-    """
-    Validate that the route respects time windows and add warnings for violations.
-    Returns route plan with time window violation flags.
-    """
-    logger.info("Validating time window constraints for greedy algorithm result")
-    
-    corrected_route = []
-    current_time = start_ts
-    violations = []
-    
-    for i, stop in enumerate(route_plan):
-        # Get location data from the stop's location_data field
-        location = stop["location_data"]
-        house_data = location["house_data"]
-        
-        # Include travel time from previous point (estimated if provided)
-        travel_duration_sec = int(stop.get("travel_duration_sec", 0))
-        arrival_epoch = current_time + travel_duration_sec
-        arrival_time = datetime.fromtimestamp(arrival_epoch, timezone.utc)
-        window_start = datetime.fromtimestamp(location["start_ts"], timezone.utc)
-        window_end = datetime.fromtimestamp(location["end_ts"], timezone.utc)
-        
-        # Check for time window violations
-        time_window_violation = False
-        if arrival_time < window_start:
-            logger.warning(f"Arrival time {arrival_time} is before window opens {window_start} for {house_data.address}")
-            time_window_violation = True
-            violations.append(f"Early arrival at {house_data.address}")
-        elif arrival_time > window_end:
-            logger.error(f"Arrival time {arrival_time} is after window closes {window_end} for {house_data.address}")
-            time_window_violation = True
-            violations.append(f"Late arrival at {house_data.address}")
-        
-        departure_time = datetime.fromtimestamp(arrival_epoch + location["visit_duration_sec"], timezone.utc)
-        
-        corrected_route.append({
-            "address": house_data.address,
-            "arrival_time": arrival_time,
-            "departure_time": departure_time,
-            "original_order": location["original_index"],
-            "optimized_order": i,
-            "time_window_violation": time_window_violation,
-            "method": "greedy_algorithm"
-        })
-        
-        # Advance current time by this travel duration + visit duration
-        current_time = arrival_epoch + location["visit_duration_sec"]
-    
-    if violations:
-        logger.warning(f"Time window violations detected: {', '.join(violations)}")
-        logger.warning("Greedy algorithm does not respect time windows. Consider using Route Optimization API for time-constrained routing.")
-    
-    return corrected_route 
+    return compute_schedule_with_time_windows(route_plan, start_ts, method="greedy_algorithm")
