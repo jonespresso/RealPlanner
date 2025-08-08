@@ -30,6 +30,10 @@ def plan_optimized_route(houses, start_address, destination_address=None):
             destination_location = {"lat": dest_lat, "lng": dest_lng}
             logger.debug(f"Destination location: lat={dest_lat}, lng={dest_lng}")
         
+        # Validate input
+        if not houses:
+            raise Exception("No houses provided to plan route")
+
         # Geocode intermediate locations
         locations = []
         for i, h in enumerate(houses):
@@ -46,7 +50,8 @@ def plan_optimized_route(houses, start_address, destination_address=None):
             })
             logger.debug(f"Geocoded location: lat={lat}, lng={lng}")
 
-        start_ts = int(houses[0].start_time.timestamp())
+        # Use the earliest start time across all houses as the global start timestamp
+        start_ts = min(int(h.start_time.timestamp()) for h in houses)
 
         # Try optimization methods in order of preference
         optimization_methods = [

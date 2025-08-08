@@ -117,7 +117,8 @@ def call_api(request_payload):
         response = requests.post(
             f"https://routeoptimization.googleapis.com/v1/projects/{settings.GOOGLE_CLOUD_PROJECT_ID}:optimizeTours",
             headers=headers,
-            data=json.dumps(request_payload)
+            data=json.dumps(request_payload),
+            timeout=(5, 60)
         )
         response.raise_for_status()
         result = response.json()

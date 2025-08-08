@@ -18,7 +18,6 @@ app.add_middleware(
 )
 
 app.include_router(api_router)
-print(settings.DATABASE_URL)
 
 @app.get("/")
 def root():

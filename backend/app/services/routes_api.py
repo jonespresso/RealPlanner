@@ -59,7 +59,7 @@ def build_payload(locations_with_windows, start_location, destination_location=N
         },
         "languageCode": "en-US",
         "units": "METRIC",
-        "travel_mode": 1,  # 1 = DRIVING in the RouteTravelMode enum
+        "travelMode": "DRIVE",
         "optimizeWaypointOrder": True  # Enable waypoint optimization
     }
 
@@ -77,7 +77,8 @@ def call_api(request_payload):
                 "X-Goog-Api-Key": settings.GOOGLE_MAPS_API_KEY,
                 "X-Goog-FieldMask": "routes.duration,routes.distanceMeters,routes.legs.duration,routes.legs.distanceMeters,routes.legs.steps,routes.optimizedIntermediateWaypointIndex"
             },
-            data=json.dumps(request_payload)
+            data=json.dumps(request_payload),
+            timeout=(5, 30)
         )
         response.raise_for_status()
         result = response.json()
@@ -105,9 +106,12 @@ def validate_time_windows(route_plan, locations, start_ts):
         # Get location data from the stop's location_data field
         location = stop["location_data"]
         house_data = location["house_data"]
-        
+
+        # Include travel time from previous point (origin for first stop)
+        travel_duration_sec = int(stop.get("travel_duration_sec", 0))
+        arrival_epoch = current_time + travel_duration_sec
         # Check if arrival time is within the time window
-        arrival_time = datetime.fromtimestamp(current_time, timezone.utc)
+        arrival_time = datetime.fromtimestamp(arrival_epoch, timezone.utc)
         window_start = datetime.fromtimestamp(location["start_ts"], timezone.utc)
         window_end = datetime.fromtimestamp(location["end_ts"], timezone.utc)
         
@@ -122,7 +126,7 @@ def validate_time_windows(route_plan, locations, start_ts):
             time_window_violation = True
             violations.append(f"Late arrival at {house_data.address}")
         
-        departure_time = datetime.fromtimestamp(current_time + location["visit_duration_sec"], timezone.utc)
+        departure_time = datetime.fromtimestamp(arrival_epoch + location["visit_duration_sec"], timezone.utc)
         
         corrected_route.append({
             "address": house_data.address,
@@ -134,14 +138,8 @@ def validate_time_windows(route_plan, locations, start_ts):
             "method": "routes_api"
         })
         
-        current_time += location["visit_duration_sec"]
-        
-        # Add travel time to next location (if not the last one)
-        if i < len(route_plan) - 1:
-            # Estimate travel time (this is a simplified approach)
-            # In a real implementation, you'd want to get actual travel times
-            travel_time_estimate = 15 * 60  # 15 minutes estimate
-            current_time += travel_time_estimate
+        # Advance current time by this travel duration + visit duration
+        current_time = arrival_epoch + location["visit_duration_sec"]
     
     if violations:
         logger.warning(f"Time window violations detected: {', '.join(violations)}")
@@ -162,23 +160,25 @@ def process_response(raw_response, locations, start_ts):
         # Reorder locations based on optimization
         optimized_locations = [locations[i] for i in optimized_order]
         
-        current_time = start_ts
         for i, leg in enumerate(route["legs"]):
             if i < len(optimized_locations):  # Skip the last leg (return to start/destination)
                 location = optimized_locations[i]
                 house_data = location["house_data"]
-                leg_duration = int(leg["duration"].replace("s", ""))
-                arrival = datetime.fromtimestamp(current_time, timezone.utc)
-                departure = datetime.fromtimestamp(current_time + location["visit_duration_sec"], timezone.utc)
+                leg_duration = int(str(leg["duration"]).replace("s", ""))
+                # Compute arrival and departure using start_ts and cumulative durations
+                # Arrival time here is start_ts + cumulative previous durations + this leg duration
+                # For downstream validation we will rely on travel_duration_sec per stop
+                arrival = datetime.fromtimestamp(start_ts, timezone.utc)  # placeholder; validator will compute accurately
+                departure = datetime.fromtimestamp(start_ts + location["visit_duration_sec"], timezone.utc)
                 route_plan.append({
                     "address": house_data.address,
                     "arrival_time": arrival,
                     "departure_time": departure,
                     "original_order": location["original_index"],
                     "optimized_order": i,
-                    "location_data": location  # Store the full location data for validation
+                    "location_data": location,  # Store the full location data for validation
+                    "travel_duration_sec": leg_duration
                 })
-                current_time += leg_duration + location["visit_duration_sec"]
                 logger.debug(f"Processed optimized visit: {house_data.address} (original: {location['original_index']}, optimized: {i})")
 
     return route_plan

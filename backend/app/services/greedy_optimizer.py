@@ -58,32 +58,39 @@ def optimize_route(locations, start_location, destination_location=None, start_t
             nearest = find_nearest_neighbor(current_location, unvisited_locations)
             if not nearest:
                 break
-            
-            # Add to route plan
+
+            # Estimate travel time from current_location to nearest using simple speed model
+            try:
+                distance_km = calculate_distance(
+                    current_location["lat"], current_location["lng"],
+                    nearest["lat"], nearest["lng"]
+                )
+                # Assume average speed 40 km/h; minimum 5 minutes to avoid zero
+                travel_time_estimate = max(5 * 60, int((distance_km / 40.0) * 3600))
+            except Exception:
+                travel_time_estimate = 15 * 60
+
+            # Add to route plan (times will be recomputed in validator; set reasonable placeholders)
             house_data = nearest["house_data"]
-            arrival_time = datetime.fromtimestamp(current_time, timezone.utc)
-            departure_time = datetime.fromtimestamp(current_time + nearest["visit_duration_sec"], timezone.utc)
-            
+            arrival_time = datetime.fromtimestamp(current_time + travel_time_estimate, timezone.utc)
+            departure_time = datetime.fromtimestamp(current_time + travel_time_estimate + nearest["visit_duration_sec"], timezone.utc)
+
             route_plan.append({
                 "address": house_data.address,
                 "arrival_time": arrival_time,
                 "departure_time": departure_time,
                 "original_order": nearest["original_index"],
                 "optimized_order": len(route_plan),
-                "time_window_violation": False,  # We'll check this later
+                "time_window_violation": False,
                 "method": "greedy_algorithm",
-                "location_data": nearest  # Store the full location data for validation
+                "location_data": nearest,
+                "travel_duration_sec": travel_time_estimate
             })
-            
-            # Update current location and time
+
+            # Update current location and time (travel + visit)
             current_location = nearest
-            current_time += nearest["visit_duration_sec"]
-            
-            # Add estimated travel time to next location
-            if len(unvisited_locations) > 1:
-                travel_time_estimate = 15 * 60  # 15 minutes estimate
-                current_time += travel_time_estimate
-            
+            current_time += travel_time_estimate + nearest["visit_duration_sec"]
+
             # Remove visited location
             unvisited_locations.remove(nearest)
         
@@ -113,8 +120,10 @@ def validate_time_windows(route_plan, locations, start_ts):
         location = stop["location_data"]
         house_data = location["house_data"]
         
-        # Check if arrival time is within the time window
-        arrival_time = datetime.fromtimestamp(current_time, timezone.utc)
+        # Include travel time from previous point (estimated if provided)
+        travel_duration_sec = int(stop.get("travel_duration_sec", 0))
+        arrival_epoch = current_time + travel_duration_sec
+        arrival_time = datetime.fromtimestamp(arrival_epoch, timezone.utc)
         window_start = datetime.fromtimestamp(location["start_ts"], timezone.utc)
         window_end = datetime.fromtimestamp(location["end_ts"], timezone.utc)
         
@@ -129,7 +138,7 @@ def validate_time_windows(route_plan, locations, start_ts):
             time_window_violation = True
             violations.append(f"Late arrival at {house_data.address}")
         
-        departure_time = datetime.fromtimestamp(current_time + location["visit_duration_sec"], timezone.utc)
+        departure_time = datetime.fromtimestamp(arrival_epoch + location["visit_duration_sec"], timezone.utc)
         
         corrected_route.append({
             "address": house_data.address,
@@ -141,12 +150,8 @@ def validate_time_windows(route_plan, locations, start_ts):
             "method": "greedy_algorithm"
         })
         
-        current_time += location["visit_duration_sec"]
-        
-        # Add travel time to next location (if not the last one)
-        if i < len(route_plan) - 1:
-            travel_time_estimate = 15 * 60  # 15 minutes estimate
-            current_time += travel_time_estimate
+        # Advance current time by this travel duration + visit duration
+        current_time = arrival_epoch + location["visit_duration_sec"]
     
     if violations:
         logger.warning(f"Time window violations detected: {', '.join(violations)}")

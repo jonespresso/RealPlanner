@@ -14,6 +14,8 @@ def ping():
 @router.post("/plan-route", response_model=RoutePlanResponse)
 def plan_route(request: RoutePlanRequest):
     try:
+        if not request.houses:
+            raise HTTPException(status_code=400, detail="houses must not be empty")
         logger.info(f"Received route planning request for {len(request.houses)} houses")
         logger.debug(f"Request.details: {request.model_dump()}")
         
