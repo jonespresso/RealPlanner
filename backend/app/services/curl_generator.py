@@ -2,8 +2,8 @@ import json
 from datetime import datetime, timezone
 from app.core.config import settings
 from app.services.geocoding import geocode_address
-from app.services.route_optimization_api import build_payload as build_route_optimization_payload
-from app.services.routes_api import build_payload as build_routes_api_payload
+from app.services.google.route_optimization_api import build_payload as build_route_optimization_payload
+from app.services.google.routes_api import build_payload as build_routes_api_payload
 from app.schemas.route import RouteOptimizationParams
 from app.core.logging import get_logger
 

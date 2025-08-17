@@ -1,11 +1,3 @@
-from pydantic import BaseModel
-
-class Property(BaseModel):
-    id: int
-    address: str
-    description: str
-    open_hours: str
-    link: str
-
-    class Config:
-        orm_mode = True
+# Deprecated: Pydantic schemas should live under app/schemas/
+# Keeping this file to preserve imports; re-export Property from new location.
+from app.schemas.property import Property  # noqa: F401

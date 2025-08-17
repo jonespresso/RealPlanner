@@ -31,7 +31,7 @@ The RealPlanner App is designed to help real estate professionals efficiently pl
 
 ### 🧭 System Overview
 ```plaintext
-[Frontend - React + Next.js]
+[Frontend - React (Create React App)]
         │
         ▼
 [API Server - FastAPI (Python)]
@@ -47,11 +47,11 @@ The RealPlanner App is designed to help real estate professionals efficiently pl
 ### ⚙️ Frontend (Web UI)
 | Layer              | Tech                                |
 |--------------------|--------------------------------------|
-| Framework          | React + Next.js                     |
-| Styling/UI         | TailwindCSS + shadcn/ui             |
+| Framework          | React (Create React App)            |
+| Styling/UI         | CSS (CRA default)                   |
 | Map Integration    | Google Maps JS API                  |
-| State Management   | React Context or Zustand            |
-| Auth Client        | Supabase Auth JS                    |
+| State Management   | React state/Context (as needed)     |
+| Auth Client        | Supabase Auth JS (future)           |
 
 ---
 

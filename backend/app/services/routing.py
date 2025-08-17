@@ -1,7 +1,7 @@
 from app.core.logging import get_logger
 from app.services.geocoding import geocode_address
-from app.services.route_optimization_api import optimize_route as route_optimization_api_optimize
-from app.services.routes_api import optimize_route as routes_api_optimize
+from app.services.google.route_optimization_api import optimize_route as route_optimization_api_optimize
+from app.services.google.routes_api import optimize_route as routes_api_optimize
 from app.services.greedy_optimizer import optimize_route as greedy_optimize
 from app.schemas.route import RouteOptimizationParams, RoutePlanResponse
 

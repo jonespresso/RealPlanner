@@ -24,13 +24,13 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000 --log-level debug
 **Option A: Use the test script**
 ```bash
 cd backend
-./test_with_curl.sh
+./scripts/test_with_curl.sh
 ```
 
 **Option B: Use Python script**
 ```bash
 cd backend
-python test_with_curl.py
+python scripts/test_with_curl.py
 ```
 
 **Option C: Manual curl commands**

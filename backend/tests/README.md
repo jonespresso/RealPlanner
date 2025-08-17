@@ -15,10 +15,16 @@ cd backend
 python3 tests/run_tests.py
 ```
 
-### Run individual test:
+### Run individual test (script):
 ```bash
 cd backend
 python3 tests/test_optimization.py
+```
+
+### Run with pytest (optional):
+```bash
+cd backend
+pytest tests/test_optimization.py -s -q
 ```
 
 ## Test Requirements

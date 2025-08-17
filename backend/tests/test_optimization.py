@@ -6,8 +6,6 @@ import sys
 import os
 from datetime import datetime, timezone, timedelta
 
-# Add the parent directory to the Python path to import from app
-sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 from app.services.routing import plan_optimized_route
 from app.schemas.route import HouseVisit
@@ -49,17 +47,25 @@ def test_route_optimization():
         print(f"Visit date: {tomorrow.strftime('%Y-%m-%d')}")
         print("-" * 50)
         
-        result = plan_optimized_route(houses, start_address)
+        # Define a global planning window (broader than individual visit windows)
+        global_start_time = tomorrow.replace(hour=8, minute=0, second=0, microsecond=0)
+        global_end_time = tomorrow.replace(hour=18, minute=0, second=0, microsecond=0)
+
+        result = plan_optimized_route(
+            houses,
+            start_address,
+            destination_address=None,
+            global_start_time=global_start_time,
+            global_end_time=global_end_time,
+        )
         
         print("Optimized route:")
-        for i, stop in enumerate(result["route"]):
-            print(f"{i+1}. {stop['address']}")
-            print(f"   Arrival: {stop['arrival_time']}")
-            print(f"   Departure: {stop['departure_time']}")
-            print(f"   Original order: {stop['original_order']}, Optimized order: {stop['optimized_order']}")
-            if stop.get('method'):
-                print(f"   Method: {stop['method']}")
-            if stop.get('time_window_violation'):
+        for i, stop in enumerate(result.route):
+            print(f"{i+1}. {stop.address}")
+            print(f"   Arrival: {stop.arrival_time}")
+            print(f"   Departure: {stop.departure_time}")
+            print(f"   Original order: {stop.original_order}, Optimized order: {stop.optimized_order}")
+            if stop.time_window_violation:
                 print(f"   ⚠️  TIME WINDOW VIOLATION")
             print()
             

@@ -1,0 +1,27 @@
+[project]
+name = "realplanner-backend"
+version = "0.1.0"
+description = "FastAPI backend for RealPlanner"
+authors = [{ name = "RealPlanner" }]
+requires-python = ">=3.9"
+dependencies = [
+  "fastapi>=0.110",
+  "uvicorn[standard]>=0.23",
+  "pydantic-settings>=2.2",
+  "python-dotenv>=1.0",
+  "requests>=2.31",
+  "SQLAlchemy>=2.0",
+  "google-auth>=2.22",
+  "google-auth-oauthlib>=1.2",
+  "google-auth-httplib2>=0.2.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.2",
+]
+
+[build-system]
+requires = ["setuptools>=67", "wheel"]
+build-backend = "setuptools.build_meta"
+

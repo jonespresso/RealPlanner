@@ -52,7 +52,7 @@ For advanced optimization features:
 
 ## Environment Variables
 
-Create a `.env` file in the backend directory:
+Create a `.env` file in the backend directory (backend/.env). Avoid placing a root-level .env to prevent ambiguity with tooling that runs from the repo root:
 
 ```env
 # Required for Routes API (minimum setup)

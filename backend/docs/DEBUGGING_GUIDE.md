@@ -53,7 +53,7 @@ import pdb; pdb.set_trace()  # Debug breakpoint - remove in production
 
 ```bash
 cd backend
-python debug_route_optimization.py
+python scripts/debug_route_optimization.py
 ```
 
 ### pdb Commands
@@ -103,7 +103,7 @@ This script provides step-by-step debugging with detailed output for each stage:
 
 ```bash
 cd backend
-python -i debug_route_optimization.py
+python -i scripts/debug_route_optimization.py
 ```
 
 This allows you to:
@@ -114,11 +114,11 @@ This allows you to:
 ### Example Interactive Session
 
 ```python
->>> from app.services.route_optimization_api import get_oauth_token
+>>> from app.services.google.route_optimization_api import get_oauth_token
 >>> token = get_oauth_token()
 >>> print(f"Token: {token[:20]}..." if token else "No token")
 >>> 
->>> from app.services.route_optimization_api import build_payload
+>>> from app.services.google.route_optimization_api import build_payload
 >>> # Test payload building with your data
 ```
 

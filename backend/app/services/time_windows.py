@@ -72,10 +72,6 @@ def compute_schedule_with_time_windows(route_plan: List[Dict], start_ts: int) ->
         logger.warning(
             f"Time window violations detected: {', '.join(violations)}"
         )
-        if method != "route_optimization_api":
-            logger.warning(
-                f"{method} does not respect time windows. Consider using Route Optimization API for time-constrained routing."
-            )
 
     return corrected_route
 

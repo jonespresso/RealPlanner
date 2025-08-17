@@ -11,6 +11,13 @@ Contents:
 
 Commands
 
+With Makefile (recommended)
+- From repo root
+  - Backend: make backend-install | backend-install-dev | backend-run | backend-test | backend-test-one FILE=tests/test_optimization.py | backend-curl-sh | backend-curl-py
+  - Frontend: make frontend-install | frontend-start | frontend-build | frontend-test | frontend-test-one TEST=App.test.tsx or PATTERN="learn react"
+
+Without Makefile
+
 Backend (FastAPI, Python)
 - Set environment (minimum for Routes API fallback)
   - In backend/.env
@@ -30,9 +37,9 @@ Backend (FastAPI, Python)
   - cd backend
   - python3 tests/test_optimization.py
 - Quick API checks (server must be running)
-  - cd backend
-  - ./test_with_curl.sh
-  - Or: python3 test_with_curl.py
+- cd backend
+  - ./scripts/test_with_curl.sh
+  - Or: python3 scripts/test_with_curl.py
 
 Frontend (React + TypeScript via Create React App)
 - Install deps
@@ -112,13 +119,13 @@ Testing strategy
 Local development loop
 - Start backend (port 8000) and frontend (port 3000); CORS is configured to allow http://localhost:3000
 - Use frontend to construct payloads or run curl/python test scripts in backend to exercise the API
-- For deeper backend debugging, see backend/DEBUG_WITH_UVICORN_CURL.md and backend/DEBUGGING_GUIDE.md (VS Code launch configs referenced there; step through route_optimization_api and routing orchestrator)
+- For deeper backend debugging, see backend/docs/DEBUG_WITH_UVICORN_CURL.md and backend/docs/DEBUGGING_GUIDE.md (VS Code launch configs referenced there; step through route_optimization_api and routing orchestrator)
 
 Notable files to consult
 - README.md: product and system overview, tech choices, and future roadmap
 - backend/ROUTE_OPTIMIZATION_ARCHITECTURE.md and backend/ROUTE_OPTIMIZATION.md: detailed design of the optimization approach and response normalization
 - backend/SETUP.md: environment variables, differences between Google APIs, and troubleshooting
-- backend/DEBUG_WITH_UVICORN_CURL.md and backend/DEBUGGING_GUIDE.md: practical debugging flows with uvicorn, curl, and VS Code
+- backend/docs/DEBUG_WITH_UVICORN_CURL.md and backend/docs/DEBUGGING_GUIDE.md: practical debugging flows with uvicorn, curl, and VS Code
 
 Gaps and cautions
 - docker-compose.yaml and backend/Dockerfile are present but empty; prefer local runs via uvicorn and npm
