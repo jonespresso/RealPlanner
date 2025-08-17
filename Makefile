@@ -3,6 +3,10 @@
 
 # Root Makefile that proxies to backend/ and frontend/
 
+# Frontend mode: production (default) or debug
+MODE ?= production
+FRONTEND_DIR := frontend/$(MODE)
+
 help:
 	@echo "Root targets:"
 	@echo "  backend-install        Install backend deps (requirements.txt)"
@@ -12,11 +16,11 @@ help:
 	@echo "  backend-test-one       Run a single backend test (FILE=tests/test_optimization.py)"
 	@echo "  backend-curl-sh        Run backend curl smoke tests (server must be running)"
 	@echo "  backend-curl-py        Run backend Python smoke tests (server must be running)"
-	@echo "  frontend-install       npm install in frontend/"
-	@echo "  frontend-start         npm start (CRA dev server)"
-	@echo "  frontend-build         npm run build"
-	@echo "  frontend-test          npm test (watch mode)"
-	@echo "  frontend-test-one      npm test single (TEST=App.test.tsx or PATTERN via -t)"
+	@echo "  frontend-install       npm install in $(FRONTEND_DIR) (override with MODE=debug)"
+	@echo "  frontend-start         npm start in $(FRONTEND_DIR)"
+	@echo "  frontend-build         npm run build in $(FRONTEND_DIR)"
+	@echo "  frontend-test          npm test (watch mode) in $(FRONTEND_DIR)"
+	@echo "  frontend-test-one      npm test single (TEST=App.test.tsx or PATTERN via -t) in $(FRONTEND_DIR)"
 
 # -------- Backend proxies --------
 backend-install:
@@ -43,22 +47,22 @@ backend-curl-py:
 
 # -------- Frontend proxies --------
 frontend-install:
-	cd frontend && npm install
+	cd $(FRONTEND_DIR) && npm install
 
 frontend-start:
-	cd frontend && npm start
+	cd $(FRONTEND_DIR) && npm start
 
 frontend-build:
-	cd frontend && npm run build
+	cd $(FRONTEND_DIR) && npm run build
 
 frontend-test:
-	cd frontend && npm test
+	cd $(FRONTEND_DIR) && npm test
 
 # Usage examples:
 #   make frontend-test-one TEST=App.test.tsx
 #   make frontend-test-one PATTERN="learn react"
 frontend-test-one:
-	cd frontend && if [ -n "$(TEST)" ]; then npm test -- "$(TEST)" ; \
+	cd $(FRONTEND_DIR) && if [ -n "$(TEST)" ]; then npm test -- "$(TEST)" ; \
 	elif [ -n "$(PATTERN)" ]; then npm test -- -t "$(PATTERN)" ; \
 	else npm test ; fi
 

@@ -42,17 +42,14 @@ Backend (FastAPI, Python)
   - Or: python3 scripts/test_with_curl.py
 
 Frontend (React + TypeScript via Create React App)
-- Install deps
-  - cd frontend && npm install
-- Start dev server
-  - npm start
-- Build
-  - npm run build
-- Run tests (watch mode)
-  - npm test
-- Run a single test
-  - npm test -- App.test.tsx
-  - or with a pattern: npm test -- -t "learn react"
+- Debug app (moved to frontend/debug)
+  - Install deps: cd frontend/debug && npm install
+  - Start dev server: npm start
+  - Build: npm run build
+  - Tests (watch): npm test
+  - Single test: npm test -- App.test.tsx or npm test -- -t "learn react"
+- Production app scaffold
+  - Location: frontend/production (empty placeholder for formal frontend)
 
 High-level architecture
 
