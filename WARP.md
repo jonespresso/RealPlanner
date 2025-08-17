@@ -74,8 +74,8 @@ Backend layout and flow
   - logging.py: configures structured logging; get_logger(name) sets DEBUG by default
 - Schemas and models:
   - app/schemas/route.py: request/response models (HouseVisit, RoutePlanRequest, StopAssignment, RoutePlanResponse)
-  - app/models/database.py: SQLAlchemy Base placeholder; no active persistence
-  - app/models/schemas.py: example Pydantic model (Property)
+  - app/schemas/property.py: example Pydantic model (Property)
+  - app/db/base.py: SQLAlchemy Base (no active persistence yet)
 - Services (core route planning logic): backend/app/services/
   - routing.py: orchestrator. Steps:
     1) Geocode start/destination and each house address
