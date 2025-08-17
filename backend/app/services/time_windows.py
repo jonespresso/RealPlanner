@@ -4,7 +4,7 @@ from app.core.logging import get_logger
 
 logger = get_logger(__name__)
 
-def compute_schedule_with_time_windows(route_plan: List[Dict], start_ts: int, method: str) -> List[Dict]:
+def compute_schedule_with_time_windows(route_plan: List[Dict], start_ts: int) -> List[Dict]:
     """
     Compute arrival/departure schedule and annotate time window compliance for optimizers
     that do not natively enforce windows.
@@ -27,7 +27,6 @@ def compute_schedule_with_time_windows(route_plan: List[Dict], start_ts: int, me
             corrected_route.append({
                 **stop,
                 "time_window_violation": None,
-                "method": method,
             })
             continue
 
@@ -64,7 +63,6 @@ def compute_schedule_with_time_windows(route_plan: List[Dict], start_ts: int, me
             "original_order": location["original_index"],
             "optimized_order": stop.get("optimized_order", i),
             "time_window_violation": time_window_violation,
-            "method": method,
         })
 
         # Advance clock by this travel + visit duration

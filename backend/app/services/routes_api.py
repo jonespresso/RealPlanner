@@ -4,14 +4,18 @@ from datetime import datetime, timezone
 from app.core.logging import get_logger
 from app.core.config import settings
 from app.services.time_windows import compute_schedule_with_time_windows
+from app.schemas.route import RouteOptimizationParams
 
 logger = get_logger(__name__)
 
-def build_payload(locations_with_windows, start_location, destination_location=None, start_ts=None):
+def build_payload(params: RouteOptimizationParams):
     """
     Build payload for Google Routes API with waypoint optimization
     Note: Routes API does NOT support time window constraints
     """
+    locations_with_windows = params.locations
+    start_location = params.start_location
+    destination_location = params.destination_location
     origin = {
         "location": {
             "latLng": {
@@ -52,7 +56,7 @@ def build_payload(locations_with_windows, start_location, destination_location=N
         "destination": destination,
         "intermediates": waypoints,
         "routingPreference": "TRAFFIC_AWARE",
-        "departureTime": datetime.fromtimestamp(start_ts, timezone.utc).isoformat(),
+        "departureTime": params.global_start_time.isoformat(),
         "computeAlternativeRoutes": False,
         "routeModifiers": {
             "avoidTolls": False,
@@ -93,7 +97,7 @@ def call_api(request_payload):
         raise
 
 def validate_time_windows(route_plan, locations, start_ts):
-    return compute_schedule_with_time_windows(route_plan, start_ts, method="routes_api")
+    return compute_schedule_with_time_windows(route_plan, start_ts)
 
 def process_response(raw_response, locations, start_ts):
     """Process Routes API response"""
@@ -131,21 +135,21 @@ def process_response(raw_response, locations, start_ts):
 
     return route_plan
 
-def optimize_route(locations, start_location, destination_location=None, start_ts=None):
+def optimize_route(params: RouteOptimizationParams):
     """
     Optimize route using Google Routes API with waypoint optimization
     Returns optimized route plan or raises exception if failed
     """
     try:
-        payload = build_payload(locations, start_location, destination_location, start_ts)
+        payload = build_payload(params)
         raw_response = call_api(payload)
-        route_plan = process_response(raw_response, locations, start_ts)
+        route_plan = process_response(raw_response, params.locations, int(params.global_start_time.timestamp()))
         
         if not route_plan:
             raise Exception("No route plan generated from Routes API")
         
         # Validate time windows and add warnings
-        corrected_route = validate_time_windows(route_plan, locations, start_ts)
+        corrected_route = validate_time_windows(route_plan, params.locations, int(params.global_start_time.timestamp()))
         
         logger.info("Successfully created optimized route plan using Routes API (with time window validation)")
         return corrected_route

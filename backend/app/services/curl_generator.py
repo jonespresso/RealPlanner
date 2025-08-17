@@ -4,6 +4,7 @@ from app.core.config import settings
 from app.services.geocoding import geocode_address
 from app.services.route_optimization_api import build_payload as build_route_optimization_payload
 from app.services.routes_api import build_payload as build_routes_api_payload
+from app.schemas.route import RouteOptimizationParams
 from app.core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -44,12 +45,17 @@ def generate_curl_commands(request_data):
                 "house_data": h
             })
         
-        start_ts = int(houses[0].start_time.timestamp())
+        # Create optimization parameters object
+        optimization_params = RouteOptimizationParams(
+            locations=locations,
+            start_location=start_location,
+            destination_location=destination_location,
+            global_start_time=request_data.global_start_time,
+            global_end_time=request_data.global_end_time
+        )
         
         # Generate Route Optimization API curl command
-        route_optimization_payload = build_route_optimization_payload(
-            locations, start_location, destination_location, start_ts
-        )
+        route_optimization_payload = build_route_optimization_payload(optimization_params)
         
         route_optimization_curl = f"""curl -X POST "https://routeoptimization.googleapis.com/v1/projects/{settings.GOOGLE_CLOUD_PROJECT_ID}:optimizeTours" \\
   -H "Content-Type: application/json" \\
@@ -57,9 +63,7 @@ def generate_curl_commands(request_data):
   -d '{json.dumps(route_optimization_payload, indent=2)}'"""
         
         # Generate Routes API curl command
-        routes_api_payload = build_routes_api_payload(
-            locations, start_location, destination_location, start_ts
-        )
+        routes_api_payload = build_routes_api_payload(optimization_params)
         
         routes_api_curl = f"""curl -X POST "https://routes.googleapis.com/directions/v2:computeRoutes" \\
   -H "Content-Type: application/json" \\

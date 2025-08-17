@@ -5,6 +5,7 @@ from app.core.logging import get_logger
 from google.auth.transport.requests import Request
 from google.oauth2 import service_account
 from app.core.config import settings
+from app.schemas.route import RouteOptimizationParams
 
 logger = get_logger(__name__)
 
@@ -28,15 +29,15 @@ def get_oauth_token():
         logger.error(f"Error getting OAuth token: {e}")
         return None
 
-def build_payload(locations_with_windows, start_location, destination_location=None, start_ts=None):
+def build_payload(params: RouteOptimizationParams):
     """
     Build payload for Google Route Optimization API
     Args:
-        locations_with_windows: List of locations to visit
-        start_location: Dict with lat/lng of start location
-        destination_location: Optional dict with lat/lng of destination. If None, returns to start location.
-        start_ts: Start timestamp
+        params: RouteOptimizationParams containing locations, start_location, destination_location, global_start_time, global_end_time
     """
+    locations_with_windows = params.locations
+    start_location = params.start_location
+    destination_location = params.destination_location
     # Build shipments (houses to visit)
     shipments = []
     for i, loc in enumerate(locations_with_windows):
@@ -78,14 +79,12 @@ def build_payload(locations_with_windows, start_location, destination_location=N
             "avoidHighways": False
         },
         "costPerKilometer": 10.0,
-        "costPerHour": 40.0
+        "costPerTraveledHour": 40.0
     }
 
-    # Compute global time window
-    earliest_start = min(loc["start_ts"] for loc in locations_with_windows)
-    latest_end = max(loc["end_ts"] for loc in locations_with_windows)
-    global_start_time = datetime.fromtimestamp(earliest_start, timezone.utc).isoformat()
-    global_end_time = datetime.fromtimestamp(latest_end, timezone.utc).isoformat()
+    # Use provided global time window
+    global_start_time = params.global_start_time.isoformat()
+    global_end_time = params.global_end_time.isoformat()
 
     return {
         "parent": f"projects/{settings.GOOGLE_CLOUD_PROJECT_ID}",
@@ -167,21 +166,20 @@ def process_response(raw_response, locations):
                     "departure_time": departure_time,
                     "original_order": location["original_index"],
                     "optimized_order": i,
-                    "time_window_violation": False,  # Route Optimization API respects time windows
-                    "method": "route_optimization_api"
+                    "time_window_violation": False  # Route Optimization API respects time windows
                 })
     
     return route_plan
 
-def optimize_route(locations, start_location, destination_location=None, start_ts=None):
+def optimize_route(params: RouteOptimizationParams):
     """
     Optimize route using Google Route Optimization API
     Returns optimized route plan or raises exception if failed
     """
     try:
-        payload = build_payload(locations, start_location, destination_location, start_ts)
+        payload = build_payload(params)
         raw_response = call_api(payload)
-        route_plan = process_response(raw_response, locations)
+        route_plan = process_response(raw_response, params.locations)
         
         if not route_plan:
             raise Exception("No route plan generated from Route Optimization API")

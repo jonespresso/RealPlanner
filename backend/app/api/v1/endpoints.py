@@ -22,7 +22,9 @@ def plan_route(request: RoutePlanRequest):
         result = plan_optimized_route(
             houses=request.houses,
             start_address=request.start_address,
-            destination_address=request.destination_address
+            destination_address=request.destination_address,
+            global_start_time=request.global_start_time,
+            global_end_time=request.global_end_time
         )
         logger.info("Successfully generated route plan")
         return result

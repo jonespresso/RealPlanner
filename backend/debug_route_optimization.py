@@ -83,9 +83,19 @@ def debug_route_optimization():
                 "house_data": h
             })
         
-        start_ts = int(houses[0].start_time.timestamp())
+        # Create optimization parameters object
+        from app.schemas.route import RouteOptimizationParams
+        global_start_time = tomorrow.replace(hour=8, minute=0, second=0, microsecond=0)
+        global_end_time = tomorrow.replace(hour=18, minute=0, second=0, microsecond=0)
+        optimization_params = RouteOptimizationParams(
+            locations=locations,
+            start_location=start_location,
+            destination_location=None,
+            global_start_time=global_start_time,
+            global_end_time=global_end_time
+        )
         
-        payload = build_payload(locations, start_location, None, start_ts)
+        payload = build_payload(optimization_params)
         print(f"✅ Payload built successfully")
         print(f"   - {len(payload['model']['shipments'])} shipments")
         print(f"   - {len(payload['model']['vehicles'])} vehicles")
@@ -108,7 +118,7 @@ def debug_route_optimization():
         # Step 5: Debug full optimization
         print("\n🚀 Step 5: Testing Full Optimization")
         print("-" * 40)
-        final_route = optimize_route(locations, start_location, None, start_ts)
+        final_route = optimize_route(optimization_params)
         print(f"✅ Full optimization successful")
         print(f"   - Final route has {len(final_route)} stops")
         

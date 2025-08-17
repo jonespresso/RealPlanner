@@ -2,6 +2,7 @@ import math
 from datetime import datetime, timezone
 from app.core.logging import get_logger
 from app.services.time_windows import compute_schedule_with_time_windows
+from app.schemas.route import RouteOptimizationParams
 
 logger = get_logger(__name__)
 
@@ -39,7 +40,7 @@ def find_nearest_neighbor(current_location, unvisited_locations):
     
     return nearest_location
 
-def optimize_route(locations, start_location, destination_location=None, start_ts=None):
+def optimize_route(params: RouteOptimizationParams):
     """
     Optimize route using greedy nearest neighbor algorithm
     Returns optimized route plan
@@ -49,10 +50,10 @@ def optimize_route(locations, start_location, destination_location=None, start_t
         logger.warning("Greedy algorithm does not respect time windows and may not be optimal")
         
         # Start from the start location
-        current_location = start_location
-        unvisited_locations = locations.copy()
+        current_location = params.start_location
+        unvisited_locations = params.locations.copy()
         route_plan = []
-        current_time = start_ts
+        current_time = int(params.global_start_time.timestamp())
         
         # Visit each location using nearest neighbor
         while unvisited_locations:
@@ -83,7 +84,6 @@ def optimize_route(locations, start_location, destination_location=None, start_t
                 "original_order": nearest["original_index"],
                 "optimized_order": len(route_plan),
                 "time_window_violation": False,
-                "method": "greedy_algorithm",
                 "location_data": nearest,
                 "travel_duration_sec": travel_time_estimate
             })
@@ -96,7 +96,7 @@ def optimize_route(locations, start_location, destination_location=None, start_t
             unvisited_locations.remove(nearest)
         
         # Validate time windows and add warnings
-        corrected_route = validate_time_windows(route_plan, locations, start_ts)
+        corrected_route = validate_time_windows(route_plan, params.locations, int(params.global_start_time.timestamp()))
         
         logger.info("Successfully created route plan using greedy algorithm")
         return corrected_route
@@ -106,4 +106,4 @@ def optimize_route(locations, start_location, destination_location=None, start_t
         raise
 
 def validate_time_windows(route_plan, locations, start_ts):
-    return compute_schedule_with_time_windows(route_plan, start_ts, method="greedy_algorithm")
+    return compute_schedule_with_time_windows(route_plan, start_ts)

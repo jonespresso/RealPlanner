@@ -3,10 +3,11 @@ from app.services.geocoding import geocode_address
 from app.services.route_optimization_api import optimize_route as route_optimization_api_optimize
 from app.services.routes_api import optimize_route as routes_api_optimize
 from app.services.greedy_optimizer import optimize_route as greedy_optimize
+from app.schemas.route import RouteOptimizationParams, RoutePlanResponse
 
 logger = get_logger(__name__)
 
-def plan_optimized_route(houses, start_address, destination_address=None):
+def plan_optimized_route(houses, start_address, destination_address=None, global_start_time=None, global_end_time=None):
     """
     Plan optimized route using multiple fallback methods:
     1. Google Route Optimization API (best, respects time windows)
@@ -60,14 +61,23 @@ def plan_optimized_route(houses, start_address, destination_address=None):
             ("Greedy Algorithm", greedy_optimize)
         ]
 
+        # Create optimization parameters object
+        optimization_params = RouteOptimizationParams(
+            locations=locations,
+            start_location=start_location,
+            destination_location=destination_location,
+            global_start_time=global_start_time,
+            global_end_time=global_end_time
+        )
+
         for method_name, optimize_func in optimization_methods:
             try:
                 logger.info(f"Attempting route optimization with {method_name}")
-                route_plan = optimize_func(locations, start_location, destination_location, start_ts)
+                route_plan = optimize_func(optimization_params)
                 
                 if route_plan:
                     logger.info(f"Successfully created route plan using {method_name}")
-                    return {"route": route_plan}
+                    return RoutePlanResponse(route=route_plan, optimization_method=method_name)
                 else:
                     logger.warning(f"{method_name} returned empty route plan")
                     
